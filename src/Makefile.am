@@ -8,6 +8,10 @@ AM_CFLAGS = \
 
 sprite_player_SOURCES = \
 	sprite-player.c \
+	sprite-effect.c \
+	effect.h \
+	effects.h \
+	effects.c \
 	$(NULL)
 
 sprite_player_LDADD = \
