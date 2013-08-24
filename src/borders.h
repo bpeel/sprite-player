@@ -21,13 +21,23 @@
  *
  */
 
-#ifndef _EFFECTS_H
-#define _EFFECTS_H
+#ifndef _BORDERS_H
+#define _BORDERS_H
 
-#include "effect.h"
+#include <cogl/cogl.h>
+#include <cogl-gst/cogl-gst.h>
 
-#define N_EFFECTS 2
+typedef struct _Borders Borders;
 
-extern const Effect * const effects[N_EFFECTS];
+Borders *
+borders_new (CoglContext *context);
 
-#endif /* _EFFECTS_H */
+void
+borders_draw (Borders *borders,
+              CoglFramebuffer *fb,
+              const CoglGstRectangle *video_output);
+
+void
+borders_free (Borders *borders);
+
+#endif /* _BORDERS_H */

@@ -6,12 +6,19 @@ AM_CFLAGS = \
 	$(WARNING_FLAGS) \
 	$(NULL)
 
-sprite_player_SOURCES = \
-	sprite-player.c \
+effects = \
+	no-effect.c \
 	sprite-effect.c \
+	$(NULL)
+
+sprite_player_SOURCES = \
+	borders.c \
+	borders.h \
 	effect.h \
-	effects.h \
 	effects.c \
+	effects.h \
+	sprite-player.c \
+	$(effects) \
 	$(NULL)
 
 sprite_player_LDADD = \
