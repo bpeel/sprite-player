@@ -65,6 +65,9 @@ static void
 set_up_pipeline (CoglGstVideoSink *sink,
                  void *user_data)
 {
+  /* disable blending... */
+  cogl_pipeline_set_blend (cogl_gst_video_sink_get_pipeline (sink),
+                           "RGBA = ADD (SRC_COLOR, 0)", NULL);
 }
 
 static void *
