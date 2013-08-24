@@ -132,13 +132,6 @@ set_up_pipeline (gpointer instance,
 
   data->current_effect->set_up_pipeline (data->sink,
                                          data->effect_data);
-
-  cogl_onscreen_add_frame_callback (COGL_ONSCREEN (data->fb),
-                                    frame_callback,
-                                    data,
-                                    NULL);
-
-  g_signal_connect (data->sink, "new-frame", G_CALLBACK (new_frame_cb), data);
 }
 
 static void
@@ -227,6 +220,13 @@ main (int argc,
 
   g_signal_connect (data.sink, "pipeline-ready",
                     G_CALLBACK (set_up_pipeline), &data);
+
+  g_signal_connect (data.sink, "new-frame", G_CALLBACK (new_frame_cb), &data);
+
+  cogl_onscreen_add_frame_callback (COGL_ONSCREEN (data.fb),
+                                    frame_callback,
+                                    &data,
+                                    NULL);
 
   data.draw_ready = TRUE;
   data.frame_ready = FALSE;
