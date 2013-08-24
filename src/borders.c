@@ -21,6 +21,8 @@
  *
  */
 
+#include "config.h"
+
 #include "borders.h"
 
 struct _Borders

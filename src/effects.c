@@ -21,6 +21,8 @@
  *
  */
 
+#include "config.h"
+
 #include "effects.h"
 
 extern Effect sprite_effect;
