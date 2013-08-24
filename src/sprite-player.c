@@ -33,6 +33,8 @@ typedef struct _Data
   CoglContext *context;
   CoglFramebuffer *fb;
   CoglGstVideoSink *sink;
+  int onscreen_width;
+  int onscreen_height;
   CoglGstRectangle video_output;
   bool draw_ready;
   bool frame_ready;
@@ -82,7 +84,9 @@ bus_watch (GstBus *bus,
 static void
 paint (Data *data)
 {
-  data->current_effect->paint (data->fb, data->effect_data);
+  data->current_effect->paint (data->fb,
+                               &data->video_output,
+                               data->effect_data);
 
   cogl_onscreen_swap_buffers (COGL_ONSCREEN (data->fb));
 }
@@ -125,10 +129,44 @@ new_frame_cb (CoglGstVideoSink *sink,
 }
 
 static void
+update_video_output (Data *data)
+{
+  CoglGstRectangle available;
+
+  available.x = 0;
+  available.y = 0;
+  available.width = data->onscreen_width;
+  available.height = data->onscreen_height;
+
+  cogl_gst_video_sink_fit_size (data->sink,
+                                &available,
+                                &data->video_output);
+}
+
+static void
+resize_callback (CoglOnscreen *onscreen,
+                 int width,
+                 int height,
+                 void *user_data)
+{
+  Data *data = user_data;
+
+  data->onscreen_width = width;
+  data->onscreen_height = height;
+
+  cogl_framebuffer_orthographic (data->fb, 0, 0, width, height, -1, 100);
+
+  if (cogl_gst_video_sink_is_ready (data->sink))
+    update_video_output (data);
+}
+
+static void
 set_up_pipeline (gpointer instance,
                  gpointer user_data)
 {
   Data *data = (Data *) user_data;
+
+  update_video_output (data);
 
   data->current_effect->set_up_pipeline (data->sink,
                                          data->effect_data);
@@ -183,6 +221,8 @@ main (int argc,
   data.context = ctx = cogl_context_new (NULL, NULL);
 
   onscreen = cogl_onscreen_new (ctx, 800, 600);
+  cogl_onscreen_set_resizable (onscreen, TRUE);
+  cogl_onscreen_add_resize_callback (onscreen, resize_callback, &data, NULL);
   cogl_onscreen_show (onscreen);
 
   data.fb = COGL_FRAMEBUFFER (onscreen);

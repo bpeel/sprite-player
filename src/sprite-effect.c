@@ -73,6 +73,9 @@ typedef struct _Data
   Spark sparks[N_SPARKS];
   GTimer *last_spark_time;
 
+  float last_output_width;
+  float last_output_height;
+
   CoglPipeline *base_pipeline;
   CoglPipeline *pipeline;
   CoglPrimitive *primitive;
@@ -81,10 +84,8 @@ typedef struct _Data
 
 static const char
 shader_source[] =
-  "vec2 coord = gl_FragCoord.st / vec2 (800.0, 600.0);\n"
-  "coord.t = 1.0 - coord.t;\n"
-  "cogl_color_out *=\n"
-  "  cogl_gst_sample_video1 (coord);\n";
+  "vec2 coord = video_pos + ((gl_PointCoord - 0.5) * point_coord_scale);\n"
+  "cogl_color_out *= cogl_gst_sample_video1 (coord);\n";
 
 static CoglTexture *
 create_round_texture (CoglContext *context)
@@ -126,6 +127,7 @@ create_round_texture (CoglContext *context)
 
 static void
 paint (CoglFramebuffer *fb,
+       const CoglGstRectangle *video_output,
        void *user_data)
 {
   Data *data = user_data;
@@ -137,6 +139,31 @@ paint (CoglFramebuffer *fb,
   cogl_gst_video_sink_attach_frame (data->sink, pipeline);
   cogl_object_unref (data->pipeline);
   data->pipeline = pipeline;
+
+  if (data->last_output_width != video_output->width ||
+      data->last_output_height != video_output->height)
+    {
+      int location =
+        cogl_pipeline_get_uniform_location (pipeline, "point_coord_scale");
+
+      if (location != -1)
+        {
+          float value[2] =
+            {
+              TEXTURE_SIZE / video_output->width,
+              TEXTURE_SIZE / video_output->height
+            };
+
+          cogl_pipeline_set_uniform_float (pipeline,
+                                           location,
+                                           2, /* n_components */
+                                           1, /* count */
+                                           value);
+        }
+
+      data->last_output_width = video_output->width;
+      data->last_output_height = video_output->height;
+    }
 
   /* Update all of the firework's positions */
   for (i = 0; i < N_FIREWORKS; i++)
@@ -210,9 +237,32 @@ paint (CoglFramebuffer *fb,
 
   cogl_framebuffer_clear4f (fb, COGL_BUFFER_BIT_COLOR, 0, 0, 0, 1);
 
+  cogl_framebuffer_push_rectangle_clip (fb,
+                                        video_output->x,
+                                        video_output->y,
+                                        video_output->x +
+                                        video_output->width,
+                                        video_output->y +
+                                        video_output->height);
+
+  cogl_framebuffer_push_matrix (fb);
+
+  cogl_framebuffer_translate (fb,
+                              video_output->x + video_output->width / 2.0f,
+                              video_output->y + video_output->height / 2.0f,
+                              0.0f);
+  cogl_framebuffer_scale (fb,
+                          video_output->width / 2.0f,
+                          video_output->height / -2.0f,
+                          1.0f);
+
   cogl_primitive_draw (data->primitive,
                        fb,
                        data->pipeline);
+
+  cogl_framebuffer_pop_matrix (fb);
+
+  cogl_framebuffer_pop_clip (fb);
 }
 
 static void
@@ -266,8 +316,12 @@ create_pipeline (Data *data)
   cogl_pipeline_set_point_size (pipeline, TEXTURE_SIZE);
 
   snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_VERTEX,
-                              "attribute float fade;\n",
-                              "cogl_color_out *= fade;\n");
+                              "attribute float fade;\n"
+                              "varying vec2 video_pos;\n",
+                              "cogl_color_out *= fade;\n"
+                              "video_pos = ((cogl_position_in.xy /\n"
+                              "              vec2 (2.0, -2.0)) +\n"
+                              "             0.5);\n");
   cogl_pipeline_add_snippet (pipeline, snippet);
   cogl_object_unref (snippet);
 
@@ -277,7 +331,10 @@ create_pipeline (Data *data)
                                                        NULL /* error */);
 
   snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
-                              NULL, /* declarations */
+                              "varying vec2 video_pos;\n"
+                              "uniform vec2 point_coord_scale;\n"
+                              "const int TEXTURE_SIZE = "
+                              G_STRINGIFY (TEXTURE_SIZE) ";\n",
                               shader_source);
   cogl_pipeline_add_snippet (pipeline, snippet);
   cogl_object_unref (snippet);

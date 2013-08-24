@@ -39,6 +39,7 @@ typedef struct
 
   void
   (* paint) (CoglFramebuffer *fb,
+             const CoglGstRectangle *video_output,
              void *user_data);
 
   void
