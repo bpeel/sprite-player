@@ -3,6 +3,7 @@ bin_PROGRAMS = sprite-player
 AM_CFLAGS = \
 	$(COGL_CFLAGS) \
 	$(COGL_GST_CFLAGS) \
+	$(GLIB_CFLAGS) \
 	$(WARNING_FLAGS) \
 	$(NULL)
 
@@ -24,4 +25,5 @@ sprite_player_SOURCES = \
 sprite_player_LDADD = \
 	$(COGL_LIBS) \
 	$(COGL_GST_LIBS) \
+	$(GLIB_LIBS) \
 	$(NULL)
