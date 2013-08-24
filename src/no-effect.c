@@ -94,4 +94,4 @@ fini (void *user_data)
   free (data);
 }
 
-EFFECT_DEFINE (no_effect)
+EFFECT_DEFINE ("No effect", no_effect)

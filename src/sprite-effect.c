@@ -412,4 +412,4 @@ fini (void *user_data)
   free (data);
 }
 
-EFFECT_DEFINE (sprite_effect)
+EFFECT_DEFINE ("Point sprites", sprite_effect)

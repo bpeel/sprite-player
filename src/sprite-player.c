@@ -383,6 +383,7 @@ main (int argc,
   GSource *cogl_source;
   GError *error = NULL;
   GstBus *bus;
+  int i;
 
   if (!process_arguments (&argc, &argv, &error))
     {
@@ -435,6 +436,11 @@ main (int argc,
   gst_element_set_state (pipeline, GST_STATE_PLAYING);
   bus = gst_pipeline_get_bus (GST_PIPELINE (pipeline));
   gst_bus_add_watch (bus, bus_watch, &data);
+
+  g_print ("Press a number key to switch effect:\n");
+
+  for (i = 0; i < N_EFFECTS; i++)
+    g_print ("%i) %s\n", i, effects[i]->name);
 
   data.main_loop = g_main_loop_new (NULL, FALSE);
 

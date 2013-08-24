@@ -29,6 +29,8 @@
 
 typedef struct
 {
+  const char *name;
+
   void *
   (* init) (CoglContext *context,
             CoglGstVideoSink *sink);
@@ -46,9 +48,10 @@ typedef struct
   (* fini) (void *user_data);
 } Effect;
 
-#define EFFECT_DEFINE(name)                     \
-  const Effect name =                           \
+#define EFFECT_DEFINE(name_str, symbol)         \
+  const Effect symbol =                         \
     {                                           \
+      .name = name_str,                         \
       .init = init,                             \
       .set_up_pipeline = set_up_pipeline,       \
       .paint = paint,                           \
