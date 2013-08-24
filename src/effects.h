@@ -26,7 +26,7 @@
 
 #include "effect.h"
 
-#define N_EFFECTS 2
+#define N_EFFECTS 3
 
 extern const Effect * const effects[N_EFFECTS];
 

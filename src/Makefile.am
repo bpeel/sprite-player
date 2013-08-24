@@ -10,6 +10,7 @@ AM_CFLAGS = \
 effects = \
 	no-effect.c \
 	sprite-effect.c \
+	squares-effect.c \
 	$(NULL)
 
 sprite_player_SOURCES = \
