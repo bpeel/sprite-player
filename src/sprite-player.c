@@ -27,6 +27,7 @@
 
 #include <cogl/cogl.h>
 #include <cogl-gst/cogl-gst.h>
+#include <cogl/cogl-xlib.h>
 #include <gio/gio.h>
 
 #include "effects.h"
@@ -288,6 +289,88 @@ process_arguments (int *argc,
   return ret;
 }
 
+static void
+handle_key_press (Data *data,
+                  int keysym)
+{
+  if (keysym >= XK_0 && keysym <= XK_9)
+    {
+      int effect_num = keysym - XK_0;
+
+      if (effect_num < N_EFFECTS)
+        set_effect (data, effects[effect_num]);
+    }
+}
+
+static CoglFilterReturn
+event_filter_cb (XEvent *event,
+                 void *user_data)
+{
+  Data *data = user_data;
+
+  switch (event->type)
+    {
+    case KeyPress:
+      {
+        CoglRenderer *renderer =
+          cogl_context_get_renderer (data->context);
+        Display *display =
+          cogl_xlib_renderer_get_display (renderer);
+        int keysym =
+          XKeycodeToKeysym (display, event->xkey.keycode, 0);
+
+        handle_key_press (data, keysym);
+      }
+      break;
+
+    default:
+      break;
+    }
+
+  return COGL_FILTER_CONTINUE;
+}
+
+static CoglContext *
+create_context (Data *data)
+{
+  CoglRenderer *renderer;
+  CoglDisplay *display;
+
+  renderer = cogl_renderer_new ();
+
+  cogl_renderer_add_constraint (renderer, COGL_RENDERER_CONSTRAINT_USES_X11);
+
+  cogl_xlib_renderer_add_filter (renderer, event_filter_cb, data);
+
+  display = cogl_display_new (renderer, NULL);
+
+  return cogl_context_new (display, NULL);
+}
+
+static CoglOnscreen *
+create_onscreen (Data *data)
+{
+  CoglRenderer *renderer = cogl_context_get_renderer (data->context);
+  Display *display = cogl_xlib_renderer_get_display (renderer);
+  CoglOnscreen *onscreen;
+  XWindowAttributes attribs;
+  Window win;
+
+  onscreen = cogl_onscreen_new (data->context, 800, 600);
+  cogl_onscreen_set_resizable (onscreen, TRUE);
+  cogl_onscreen_add_resize_callback (onscreen, resize_callback, data, NULL);
+  cogl_framebuffer_allocate (COGL_FRAMEBUFFER (onscreen), NULL);
+
+  win = cogl_x11_onscreen_get_window_xid (onscreen);
+
+  XGetWindowAttributes (display, win, &attribs);
+  XSelectInput (display, win, attribs.your_event_mask | KeyPressMask);
+
+  cogl_onscreen_show (onscreen);
+
+  return onscreen;
+}
+
 int
 main (int argc,
       char **argv)
@@ -312,12 +395,9 @@ main (int argc,
 
   /* Set the necessary cogl elements */
 
-  data.context = ctx = cogl_context_new (NULL, NULL);
+  data.context = ctx = create_context (&data);
 
-  onscreen = cogl_onscreen_new (ctx, 800, 600);
-  cogl_onscreen_set_resizable (onscreen, TRUE);
-  cogl_onscreen_add_resize_callback (onscreen, resize_callback, &data, NULL);
-  cogl_onscreen_show (onscreen);
+  onscreen = create_onscreen (&data);
 
   data.fb = COGL_FRAMEBUFFER (onscreen);
 
@@ -350,7 +430,7 @@ main (int argc,
   else
     g_object_set (G_OBJECT (bin), "uri", opt_video_file, NULL);
 
-  set_effect (&data, effects[0]);
+  set_effect (&data, effects[1]);
 
   gst_element_set_state (pipeline, GST_STATE_PLAYING);
   bus = gst_pipeline_get_bus (GST_PIPELINE (pipeline));

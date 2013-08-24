@@ -31,8 +31,8 @@ extern Effect no_effect;
 const Effect * const
 effects[N_EFFECTS] =
   {
-    &sprite_effect,
     &no_effect,
+    &sprite_effect,
   };
 
 _Static_assert (G_N_ELEMENTS (effects) == N_EFFECTS,
