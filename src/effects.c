@@ -27,6 +27,7 @@
 
 extern Effect sprite_effect;
 extern Effect squares_effect;
+extern Effect wavey_effect;
 extern Effect no_effect;
 
 const Effect * const
@@ -35,6 +36,7 @@ effects[N_EFFECTS] =
     &no_effect,
     &sprite_effect,
     &squares_effect,
+    &wavey_effect,
   };
 
 _Static_assert (G_N_ELEMENTS (effects) == N_EFFECTS,

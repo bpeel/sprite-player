@@ -11,6 +11,7 @@ effects = \
 	no-effect.c \
 	sprite-effect.c \
 	squares-effect.c \
+	wavey-effect.c \
 	$(NULL)
 
 sprite_player_SOURCES = \
