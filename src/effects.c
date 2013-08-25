@@ -25,10 +25,11 @@
 
 #include "effects.h"
 
+extern Effect no_effect;
 extern Effect sprite_effect;
 extern Effect squares_effect;
 extern Effect wavey_effect;
-extern Effect no_effect;
+extern Effect edge_effect;
 
 const Effect * const
 effects[N_EFFECTS] =
@@ -37,6 +38,7 @@ effects[N_EFFECTS] =
     &sprite_effect,
     &squares_effect,
     &wavey_effect,
+    &edge_effect,
   };
 
 _Static_assert (G_N_ELEMENTS (effects) == N_EFFECTS,

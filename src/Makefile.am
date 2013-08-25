@@ -8,6 +8,7 @@ AM_CFLAGS = \
 	$(NULL)
 
 effects = \
+	edge-effect.c \
 	no-effect.c \
 	sprite-effect.c \
 	squares-effect.c \
