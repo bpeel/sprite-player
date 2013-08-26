@@ -17,6 +17,8 @@ AM_PROG_CC_C_O
 AC_ISC_POSIX
 AC_C_CONST
 
+AC_CHECK_LIB([m], sinf)
+
 ALL_WARNING_CFLAGS="-Wall -Wcast-align -Wuninitialized
                     -Wno-strict-aliasing -Wempty-body -Wformat
                     -Wformat-security -Winit-self -Wundef

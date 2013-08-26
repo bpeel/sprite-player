@@ -11,6 +11,7 @@ effects = \
 	edge-effect.c \
 	no-effect.c \
 	sprite-effect.c \
+	stars-effect.c \
 	squares-effect.c \
 	wavey-effect.c \
 	$(NULL)
