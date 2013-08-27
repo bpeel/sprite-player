@@ -103,6 +103,7 @@ add_star (Data *data,
   float coord_scale;
   float size_speed;
   int tint_value;
+  GList *l;
   int i;
 
   size_speed = g_random_double ();
@@ -159,7 +160,17 @@ add_star (Data *data,
       tint_value >>= 1;
     }
 
-  data->stars = g_list_prepend (data->stars, star);
+  /* Keep the stars ordered by size so that the bigger stars will be
+   * drawn on top */
+  for (l = data->stars; l; l = l->next)
+    {
+      Star *other_star = l->data;
+
+      if (other_star->draw_size > star->draw_size)
+        break;
+    }
+
+  data->stars = g_list_insert_before (data->stars, l, star);
 }
 
 static void
