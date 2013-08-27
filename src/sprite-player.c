@@ -27,8 +27,8 @@
 
 #include <cogl/cogl.h>
 #include <cogl-gst/cogl-gst.h>
-#include <cogl/cogl-xlib.h>
 #include <gio/gio.h>
+#include <SDL.h>
 
 #include "effects.h"
 
@@ -297,80 +297,61 @@ static void
 handle_key_press (Data *data,
                   int keysym)
 {
-  if (keysym >= XK_0 && keysym <= XK_9)
+  if (keysym >= SDLK_0 && keysym <= SDLK_9)
     {
-      int effect_num = keysym - XK_0;
+      int effect_num = keysym - SDLK_0;
 
       if (effect_num < N_EFFECTS)
         set_effect (data, effects[effect_num]);
     }
 }
 
-static CoglFilterReturn
-event_filter_cb (XEvent *event,
-                 void *user_data)
+static gboolean
+event_timeout_cb (void *user_data)
 {
   Data *data = user_data;
+  SDL_Event event;
 
-  switch (event->type)
+  while (SDL_PollEvent (&event))
     {
-    case KeyPress:
-      {
-        CoglRenderer *renderer =
-          cogl_context_get_renderer (data->context);
-        Display *display =
-          cogl_xlib_renderer_get_display (renderer);
-        int keysym =
-          XKeycodeToKeysym (display, event->xkey.keycode, 0);
+      switch (event.type)
+        {
+        case SDL_KEYDOWN:
+          handle_key_press (data, event.key.keysym.sym);
+          break;
 
-        handle_key_press (data, keysym);
-      }
-      break;
+        case SDL_WINDOWEVENT:
+          switch (event.window.event)
+            {
+            case SDL_WINDOWEVENT_CLOSE:
+              g_main_quit (data->main_loop);
+              break;
+            }
+          break;
 
-    default:
-      break;
+        case SDL_QUIT:
+          g_main_quit (data->main_loop);
+          break;
+
+        default:
+          break;
+        }
+
+      cogl_sdl_handle_event (data->context, &event);
     }
 
-  return COGL_FILTER_CONTINUE;
-}
-
-static CoglContext *
-create_context (Data *data)
-{
-  CoglRenderer *renderer;
-  CoglDisplay *display;
-
-  renderer = cogl_renderer_new ();
-
-  cogl_renderer_add_constraint (renderer, COGL_RENDERER_CONSTRAINT_USES_X11);
-
-  cogl_xlib_renderer_add_filter (renderer, event_filter_cb, data);
-
-  display = cogl_display_new (renderer, NULL);
-
-  return cogl_context_new (display, NULL);
+  return G_SOURCE_CONTINUE;
 }
 
 static CoglOnscreen *
 create_onscreen (Data *data)
 {
-  CoglRenderer *renderer = cogl_context_get_renderer (data->context);
-  Display *display = cogl_xlib_renderer_get_display (renderer);
   CoglOnscreen *onscreen;
-  XWindowAttributes attribs;
-  Window win;
 
   onscreen = cogl_onscreen_new (data->context, 800, 600);
   cogl_onscreen_set_resizable (onscreen, TRUE);
   cogl_onscreen_add_resize_callback (onscreen, resize_callback, data, NULL);
   cogl_framebuffer_allocate (COGL_FRAMEBUFFER (onscreen), NULL);
-
-  win = cogl_x11_onscreen_get_window_xid (onscreen);
-
-  XGetWindowAttributes (display, win, &attribs);
-  XSelectInput (display, win, attribs.your_event_mask | KeyPressMask);
-
-  cogl_onscreen_show (onscreen);
 
   return onscreen;
 }
@@ -386,6 +367,7 @@ main (int argc,
   GSource *cogl_source;
   GError *error = NULL;
   GstBus *bus;
+  guint event_timeout_source;
   int i;
 
   if (!process_arguments (&argc, &argv, &error))
@@ -399,7 +381,7 @@ main (int argc,
 
   /* Set the necessary cogl elements */
 
-  data.context = ctx = create_context (&data);
+  data.context = ctx = cogl_sdl_context_new (SDL_USEREVENT, NULL);
 
   onscreen = create_onscreen (&data);
 
@@ -452,6 +434,8 @@ main (int argc,
   cogl_source = cogl_glib_source_new (ctx, G_PRIORITY_DEFAULT);
   g_source_attach (cogl_source, NULL);
 
+  event_timeout_source = g_timeout_add (16, event_timeout_cb, &data);
+
   g_signal_connect (data.sink, "pipeline-ready",
                     G_CALLBACK (set_up_pipeline), &data);
 
@@ -465,7 +449,15 @@ main (int argc,
   data.draw_ready = TRUE;
   data.frame_ready = FALSE;
 
+  resize_callback (onscreen,
+                   cogl_framebuffer_get_width (COGL_FRAMEBUFFER (onscreen)),
+                   cogl_framebuffer_get_height (COGL_FRAMEBUFFER (onscreen)),
+                   &data);
+  cogl_onscreen_show (onscreen);
+
   g_main_loop_run (data.main_loop);
+
+  g_source_remove (event_timeout_source);
 
   clear_effect (&data);
 

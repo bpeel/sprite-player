@@ -31,6 +31,7 @@ AC_SUBST([WARNING_CFLAGS])
 PKG_CHECK_MODULES([COGL], [cogl2])
 PKG_CHECK_MODULES([COGL_GST], [cogl-gst])
 PKG_CHECK_MODULES([GLIB], [glib-2.0 >= 2.32 gio-2.0 gobject-2.0])
+PKG_CHECK_MODULES([SDL], [sdl2])
 
 AC_OUTPUT(
 Makefile
