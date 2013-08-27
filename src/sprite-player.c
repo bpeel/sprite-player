@@ -37,6 +37,7 @@ typedef struct _Data
   CoglContext *context;
   CoglFramebuffer *fb;
   CoglGstVideoSink *sink;
+  GstElement *playbin;
   int onscreen_width;
   int onscreen_height;
   CoglGstRectangle video_output;
@@ -108,7 +109,10 @@ bus_watch (GstBus *bus,
     {
       case GST_MESSAGE_EOS:
         {
-          g_main_loop_quit (data->main_loop);
+          gst_element_seek_simple (GST_ELEMENT (data->playbin),
+                                   GST_FORMAT_TIME,
+                                   GST_SEEK_FLAG_FLUSH,
+                                   0);
           break;
         }
       case GST_MESSAGE_ERROR:
@@ -379,7 +383,6 @@ main (int argc,
   CoglContext *ctx;
   CoglOnscreen *onscreen;
   GstElement *pipeline;
-  GstElement *bin;
   GSource *cogl_source;
   GError *error = NULL;
   GstBus *bus;
@@ -405,7 +408,7 @@ main (int argc,
   data.sink = cogl_gst_video_sink_new (ctx);
 
   pipeline = gst_pipeline_new ("gst-player");
-  bin = gst_element_factory_make ("playbin", "bin");
+  data.playbin = gst_element_factory_make ("playbin", "bin");
 
   if (opt_video_type == VIDEO_TYPE_NONE)
     {
@@ -414,22 +417,24 @@ main (int argc,
       opt_video_type = VIDEO_TYPE_FILE;
     }
 
-  g_object_set (G_OBJECT (bin), "video-sink", GST_ELEMENT (data.sink), NULL);
+  g_object_set (G_OBJECT (data.playbin),
+                "video-sink", GST_ELEMENT (data.sink),
+                NULL);
 
-  gst_bin_add (GST_BIN (pipeline), bin);
+  gst_bin_add (GST_BIN (pipeline), data.playbin);
 
   if (g_file_test (opt_video_file, G_FILE_TEST_EXISTS))
     {
       GFile *file = g_file_new_for_path (opt_video_file);
       char *uri = g_file_get_uri (file);
 
-      g_object_set (G_OBJECT (bin), "uri", uri, NULL);
+      g_object_set (G_OBJECT (data.playbin), "uri", uri, NULL);
 
       g_free (uri);
       g_object_unref (file);
     }
   else
-    g_object_set (G_OBJECT (bin), "uri", opt_video_file, NULL);
+    g_object_set (G_OBJECT (data.playbin), "uri", opt_video_file, NULL);
 
   set_effect (&data, effects[1]);
 
