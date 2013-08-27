@@ -127,15 +127,15 @@ add_star (Data *data,
 
   if (video_output->width < video_output->height)
     {
-      star->coord_scale[1] = coord_scale;
-      star->coord_scale[0] = (coord_scale *
+      star->coord_scale[0] = coord_scale;
+      star->coord_scale[1] = (coord_scale *
                               video_output->width /
                               video_output->height);
     }
   else
     {
-      star->coord_scale[0] = coord_scale;
-      star->coord_scale[1] = (coord_scale *
+      star->coord_scale[1] = coord_scale;
+      star->coord_scale[0] = (coord_scale *
                               video_output->height /
                               video_output->width);
     }
